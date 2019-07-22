@@ -22,9 +22,6 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 @Component
-@Lazy(false)
-@Configuration
-@EnableScheduling
 public class Processor {
     private static final Logger logger = LoggerFactory.getLogger(Processor.class);
 
@@ -40,7 +37,7 @@ public class Processor {
     @Resource
     private ReceiveStatService receiveStatService;
 
-    @Scheduled(cron="0 17 21 * * ?")
+    @Scheduled(cron="0 0 22 * * ?")
 //    @Scheduled(fixedDelay = 10000)
     private void process() {
         long startTime = System.currentTimeMillis();

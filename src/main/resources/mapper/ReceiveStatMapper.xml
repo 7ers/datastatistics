@@ -20,6 +20,6 @@
     insert into T_RECEIVE_STAT (STAT_DATE, STAT_COUNT,
       createtime,duration)
     values (#{statDate,jdbcType=DATE}, #{statCount,jdbcType=BIGINT},
-      #{createtime,jdbcType=TIMESTAMP},#{duration,jdbcType=BIGINT})
+      now(),#{duration,jdbcType=BIGINT})
   </insert>
 </mapper>
