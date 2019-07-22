@@ -25,8 +25,7 @@ import java.util.stream.Collectors;
 public class Processor {
     private static final Logger logger = LoggerFactory.getLogger(Processor.class);
 
-    private static final String KEY_FILENAMES = "KEY1";
-    private static final String KEY_IPLIST = "KEY2";
+    private static final String KEY_IPLIST = "KEY1";
 
     @Value("${filepath.his_path}")
     private String his_path;
@@ -37,28 +36,22 @@ public class Processor {
     @Resource
     private ReceiveStatService receiveStatService;
 
-    @Scheduled(cron="0 0 22 * * ?")
+    @Scheduled(cron="0 30 22 * * ?")
 //    @Scheduled(fixedDelay = 10000)
     private void process() {
         long startTime = System.currentTimeMillis();
-        File folder = new File(his_path);
+        Calendar cal = Calendar.getInstance();
+        cal.add(Calendar.DATE,-1);
+        SimpleDateFormat sdf = new SimpleDateFormat("yyyyMMdd");
+        Date statDate = cal.getTime();
+        File folder = new File(his_path+sdf.format(statDate)+"/");
         if(folder.exists()){
-            List<String> oldFileList = (List)redisUtil.get(KEY_FILENAMES);
-            if(oldFileList!=null){
-                redisUtil.del(KEY_FILENAMES);
-                redisUtil.del(KEY_IPLIST);
-            }
-
             String[] fileArray = folder.list();
             if(fileArray == null || fileArray.length == 0){
                 return;
             }
-            Calendar cal = Calendar.getInstance();
-            cal.add(Calendar.DATE,-1);
-            SimpleDateFormat sdf = new SimpleDateFormat("yyyyMMdd");
-            Date statDate = cal.getTime();
-            List<String> fileNameList = delDuplication(sdf.format(statDate), Arrays.asList(fileArray));
-            redisUtil.set(KEY_FILENAMES,fileNameList);// 缓存待处理文件列表
+
+            List<String> fileNameList = Arrays.asList(fileArray);
             for (String filename : fileNameList) {
                 parseFile(his_path+filename);
             }
