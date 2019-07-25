@@ -36,15 +36,16 @@ public class Processor {
     @Resource
     private ReceiveStatService receiveStatService;
 
-    @Scheduled(cron="0 30 22 * * ?")
-//    @Scheduled(fixedDelay = 10000)
+    @Scheduled(cron="0 0 1 * * ?")
     private void process() {
         long startTime = System.currentTimeMillis();
+        logger.error("process start...");
         Calendar cal = Calendar.getInstance();
         cal.add(Calendar.DATE,-1);
         SimpleDateFormat sdf = new SimpleDateFormat("yyyyMMdd");
         Date statDate = cal.getTime();
-        File folder = new File(his_path+sdf.format(statDate)+"/");
+        String new_path = his_path+sdf.format(statDate)+"/";
+        File folder = new File(new_path);
         if(folder.exists()){
             String[] fileArray = folder.list();
             if(fileArray == null || fileArray.length == 0){
@@ -53,7 +54,8 @@ public class Processor {
 
             List<String> fileNameList = Arrays.asList(fileArray);
             for (String filename : fileNameList) {
-                parseFile(his_path+filename);
+                parseFile(new_path+filename);
+                logger.error("filename:"+filename);
             }
 
             ReceiveStat receiveStat = new ReceiveStat();
@@ -68,22 +70,23 @@ public class Processor {
             } finally {
                 redisUtil.del(KEY_IPLIST);
             }
+            logger.error("finish.");
         }
     }
 
-    private List<String> delDuplication(String statDate, List<String> fileList) {
-        List<String> ids = new ArrayList<>();//用来临时存储
-        return fileList.stream().filter(// 过滤去重
-                v -> {
-                    boolean flag = false;
-                    if(statDate.equals(v.substring(0,8))){
-                        flag = true;
-                        ids.add(v);
-                    }
-                    return flag;
-                }
-        ).collect(Collectors.toList());
-    }
+//    private List<String> delDuplication(String statDate, List<String> fileList) {
+//        List<String> ids = new ArrayList<>();//用来临时存储
+//        return fileList.stream().filter(// 过滤去重
+//                v -> {
+//                    boolean flag = false;
+//                    if(statDate.equals(v.substring(0,8))){
+//                        flag = true;
+//                        ids.add(v);
+//                    }
+//                    return flag;
+//                }
+//        ).collect(Collectors.toList());
+//    }
 
     private void parseFile(String filename) {
         BufferedRandomAccessFile reader = null;
