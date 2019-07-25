@@ -24,8 +24,6 @@ import java.util.List;
 public class Processor {
     private static final Logger logger = LoggerFactory.getLogger(Processor.class);
 
-    private static final String KEY_IPNUM = "KEY1";
-
     @Value("${filepath.his_path}")
     private String his_path;
 
