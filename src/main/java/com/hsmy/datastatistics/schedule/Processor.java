@@ -3,14 +3,10 @@ package com.hsmy.datastatistics.schedule;
 import com.hsmy.datastatistics.pojo.ReceiveStat;
 import com.hsmy.datastatistics.service.ReceiveStatService;
 import com.hsmy.datastatistics.utils.BufferedRandomAccessFile;
-import com.hsmy.datastatistics.utils.RedisUtil;
 import org.apache.tomcat.util.http.fileupload.IOUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.context.annotation.Configuration;
-import org.springframework.context.annotation.Lazy;
-import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
@@ -18,25 +14,25 @@ import org.springframework.util.StringUtils;
 import javax.annotation.Resource;
 import java.io.File;
 import java.text.SimpleDateFormat;
-import java.util.*;
-import java.util.stream.Collectors;
+import java.util.Arrays;
+import java.util.Calendar;
+import java.util.Date;
+import java.util.List;
+
 
 @Component
 public class Processor {
     private static final Logger logger = LoggerFactory.getLogger(Processor.class);
 
-    private static final String KEY_IPLIST = "KEY1";
+    private static final String KEY_IPNUM = "KEY1";
 
     @Value("${filepath.his_path}")
     private String his_path;
 
     @Resource
-    private RedisUtil redisUtil;
-
-    @Resource
     private ReceiveStatService receiveStatService;
 
-    @Scheduled(cron="0 0 1 * * ?")
+    @Scheduled(cron="0 35 5 * * ?")
     private void process() {
         long startTime = System.currentTimeMillis();
         logger.error("process start...");
@@ -53,43 +49,30 @@ public class Processor {
             }
 
             List<String> fileNameList = Arrays.asList(fileArray);
+            byte[][][][] ipMap = new byte[256][256][256][256];
+            long counter = 0;
             for (String filename : fileNameList) {
-                parseFile(new_path+filename);
-                logger.error("filename:"+filename);
+                counter += parseFile(new_path+filename,ipMap);
+                logger.error("parsed filename:"+filename+" IP'num is "+counter);
             }
 
             ReceiveStat receiveStat = new ReceiveStat();
             receiveStat.setCreatetime(new Date());
             receiveStat.setStatDate(statDate);
-            receiveStat.setStatCount(redisUtil.sGetSetSize(KEY_IPLIST));
+            receiveStat.setStatCount(counter);
             receiveStat.setDuration(System.currentTimeMillis()-startTime);
             try{
                 receiveStatService.addStat(receiveStat);
             } catch (Exception e){
                 logger.error(e.getMessage());
-            } finally {
-                redisUtil.del(KEY_IPLIST);
             }
             logger.error("finish.");
         }
     }
 
-//    private List<String> delDuplication(String statDate, List<String> fileList) {
-//        List<String> ids = new ArrayList<>();//用来临时存储
-//        return fileList.stream().filter(// 过滤去重
-//                v -> {
-//                    boolean flag = false;
-//                    if(statDate.equals(v.substring(0,8))){
-//                        flag = true;
-//                        ids.add(v);
-//                    }
-//                    return flag;
-//                }
-//        ).collect(Collectors.toList());
-//    }
-
-    private void parseFile(String filename) {
+    private long parseFile(String filename, byte[][][][] ipMap) {
         BufferedRandomAccessFile reader = null;
+        long count = 0;
         try {
             reader = new BufferedRandomAccessFile(filename, "r");
             reader.seek(0);
@@ -100,7 +83,18 @@ public class Processor {
                 if (StringUtils.isEmpty(line)) {
                     bReadEOF = true;
                 } else {
-                    redisUtil.sSet(KEY_IPLIST, line.split("\\|")[0]);
+                    String[] ipa = line.split("\\|")[0].split("\\.");
+                    if(!isIP(ipa)){
+                        continue;
+                    }
+                    int a = Integer.parseInt(ipa[0]);
+                    int b = Integer.parseInt(ipa[1]);
+                    int c = Integer.parseInt(ipa[2]);
+                    int d = Integer.parseInt(ipa[3]);
+                    if (ipMap[a][b][c][d] == 0) {
+                        ipMap[a][b][c][d] = 1;
+                        ++count;
+                    }
                 }
             }while(!bReadEOF);
         } catch (Exception e) {
@@ -108,10 +102,14 @@ public class Processor {
         } finally {
             IOUtils.closeQuietly(reader);
         }
+        return count;
     }
 
-    public static void main(String args[]){
-        System.out.println(new Date());
-        System.out.println(System.currentTimeMillis());
+    private boolean isIP(String[] ip){
+        if(ip.length == 4){
+            return true;
+        }else{
+            return false;
+        }
     }
 }
