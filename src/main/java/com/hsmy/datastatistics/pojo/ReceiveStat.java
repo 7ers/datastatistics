@@ -21,6 +21,16 @@ public class ReceiveStat {
 
     private Long duration;
 
+    public Long getIdfaCount() {
+        return idfaCount;
+    }
+
+    public void setIdfaCount(Long idfaCount) {
+        this.idfaCount = idfaCount;
+    }
+
+    private Long idfaCount;
+
     public Integer getId() {
         return id;
     }

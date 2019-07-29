@@ -13,11 +13,9 @@ import org.springframework.util.StringUtils;
 
 import javax.annotation.Resource;
 import java.io.File;
+import java.io.IOException;
 import java.text.SimpleDateFormat;
-import java.util.Arrays;
-import java.util.Calendar;
-import java.util.Date;
-import java.util.List;
+import java.util.*;
 
 
 @Component
@@ -31,6 +29,7 @@ public class Processor {
     private ReceiveStatService receiveStatService;
 
     @Scheduled(cron="0 35 5 * * ?")
+//    @Scheduled(fixedDelay = 1000)
     private void process() {
         long startTime = System.currentTimeMillis();
         logger.error("process start...");
@@ -48,9 +47,11 @@ public class Processor {
 
             List<String> fileNameList = Arrays.asList(fileArray);
             byte[][][][] ipMap = new byte[256][256][256][256];
+//            byte[][][][] ipMap = new byte[2][2][2][2];
+            HashSet<String> idfaSet = new HashSet<>();
             long counter = 0;
             for (String filename : fileNameList) {
-                counter += parseFile(new_path+filename,ipMap);
+                counter += parseFile(new_path+filename,ipMap,idfaSet);
                 logger.error("parsed filename:"+filename+" IP'num is "+counter);
             }
 
@@ -58,9 +59,14 @@ public class Processor {
             receiveStat.setCreatetime(new Date());
             receiveStat.setStatDate(statDate);
             receiveStat.setStatCount(counter);
+            receiveStat.setIdfaCount(Long.valueOf(idfaSet.size()));
             receiveStat.setDuration(System.currentTimeMillis()-startTime);
             try{
                 receiveStatService.addStat(receiveStat);
+                cal.add(Calendar.DATE,-4);//删除5天前的数据
+                String del_path =  his_path+sdf.format((cal.getTime()))+File.separator;
+                delFiles(del_path);
+                new File(del_path).delete();//删除空文件夹
             } catch (Exception e){
                 logger.error(e.getMessage());
             }
@@ -68,7 +74,7 @@ public class Processor {
         }
     }
 
-    private long parseFile(String filename, byte[][][][] ipMap) {
+    private long parseFile(String filename, byte[][][][] ipMap, HashSet<String> idfaSet) {
         BufferedRandomAccessFile reader = null;
         long count = 0;
         try {
@@ -81,7 +87,8 @@ public class Processor {
                 if (StringUtils.isEmpty(line)) {
                     bReadEOF = true;
                 } else {
-                    String[] ipa = line.split("\\|")[0].split("\\.");
+                    String[] lineArr = line.split("\\|");
+                    String[] ipa = lineArr[0].split("\\.");
                     if(!isIP(ipa)){
                         continue;
                     }
@@ -93,6 +100,12 @@ public class Processor {
                         ipMap[a][b][c][d] = 1;
                         ++count;
                     }
+                    String[] idfaArr = lineArr[1].split("\\-");
+                    StringBuilder sb = new StringBuilder();
+                    for (String s: idfaArr) {
+                        sb.append(s);
+                    }
+                    idfaSet.add(sb.toString());
                 }
             }while(!bReadEOF);
         } catch (Exception e) {
@@ -110,4 +123,43 @@ public class Processor {
             return false;
         }
     }
+
+    private void createFile(String path, String filename) throws IOException{
+        File file=new File(path+"/"+filename);
+        if(!file.exists()){
+            file.createNewFile();
+        }
+    }
+
+    private void createDir(String path){
+        File dir=new File(path);
+        if(!dir.exists()){
+            dir.mkdir();
+        }
+    }
+
+    private boolean delFiles(String path){
+        File file = new File(path);
+        if(!file.exists()||!file.isDirectory()){
+            return false;
+        }
+        String[] filelist = file.list();
+        File tf = null;
+        String tmpPath = path;
+        if(!path.endsWith(File.separator)){
+            tmpPath = path + File.separator;
+        }
+
+        for (String temp:filelist) {
+            tf = new File(tmpPath+temp);
+            if(tf.isFile()) {
+                tf.delete();
+            }else{
+                delFiles(tf.getPath());
+                new File(tf.getPath()).delete();
+            }
+        }
+        return true;
+    }
+
 }

@@ -7,8 +7,8 @@ spring:
     druid:
       db-type: mysql
       driver-class-name: com.mysql.cj.jdbc.Driver
-      url: jdbc:mysql://127.0.0.1:3306/DEVICE?useUnicode=true&characterEncoding=UTF-8&useSSL=false&serverTimezone=GMT%2b8
-#      url: jdbc:mysql://47.93.30.9:3306/DEVICE?useUnicode=true&characterEncoding=UTF-8&useSSL=false&serverTimezone=GMT%2b8
+#      url: jdbc:mysql://127.0.0.1:3306/DEVICE?useUnicode=true&characterEncoding=UTF-8&useSSL=false&serverTimezone=GMT%2b8
+      url: jdbc:mysql://47.93.30.9:3306/DEVICE?useUnicode=true&characterEncoding=UTF-8&useSSL=false&serverTimezone=GMT%2b8
       username: spider
       password: Spider#3340
       # 连接池的配置信息
@@ -86,10 +86,10 @@ mybatis:
 #配置日志信息
 logging:
   config: classpath:config/log/logback.xml
-  path: /home/log/18081
-#  path: /Users/eipwork/Documents
+#  path: /home/log/18081
+  path: /Users/eipwork/Documents
   level:
     root: error
 filepath:
-#  his_path: /Users/eipwork/files/
-  his_path: /data/backup/history/
+  his_path: /Users/eipwork/files/
+#  his_path: /data/backup/history/

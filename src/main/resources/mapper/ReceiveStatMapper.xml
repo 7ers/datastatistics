@@ -7,9 +7,10 @@
     <result column="STAT_COUNT" jdbcType="BIGINT" property="statCount" />
     <result column="createtime" jdbcType="TIMESTAMP" property="createtime" />
     <result column="duration" jdbcType="BIGINT" property="duration" />
+    <result column="IDFA_COUNT" jdbcType="BIGINT" property="idfaCount"/>
   </resultMap>
   <sql id="Base_Column_List">
-    id, STAT_DATE, STAT_COUNT, createtime, duration
+    id, STAT_DATE, STAT_COUNT, createtime, duration, idfaCount
   </sql>
   <select id="selectByDate" parameterType="java.lang.String" resultMap="BaseResultMap">
     select 
@@ -18,8 +19,8 @@
   </select>
   <insert id="insert" useGeneratedKeys="true" keyProperty="id" parameterType="com.hsmy.datastatistics.pojo.ReceiveStat">
     insert into T_RECEIVE_STAT (STAT_DATE, STAT_COUNT,
-      createtime,duration)
+      createtime,duration,IDFA_COUNT)
     values (#{statDate,jdbcType=DATE}, #{statCount,jdbcType=BIGINT},
-      now(),#{duration,jdbcType=BIGINT})
+      now(),#{duration,jdbcType=BIGINT},#{idfaCount,jdbcType=BIGINT})
   </insert>
 </mapper>
